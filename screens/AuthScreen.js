@@ -1,77 +1,185 @@
-import React from 'react'
+import React,{useState,useEffect,useReducer,useCallback} from 'react'
 import {ScrollView,
     View,
      KeyboardAvoidingView,
       StyleSheet,
-    Button} from 'react-native'
+    Button,
+    Alert,
+ActivityIndicator} from 'react-native'
 import Input from '../components/Input'
 import Card from '../components/Card'
 import {LinearGradient} from 'expo-linear-gradient'
-// need an input component
-// need Card 
-const AuthScreen = props => {
-    return (
-        <KeyboardAvoidingView 
-            behavior ='padding'
-            keyboardVerticalOffset={50}
-            style = {styles.screen}
-            >
-              <LinearGradient colors = {['#ffedff','#ffe3ff']} style = {styles.gradient}>
-                <Card style = {styles.authContainer}>
-                    <ScrollView>
-                        <Input id='email' 
-                                label = 'E-Mail' 
-                                keyboardType= 'email-adress'
-                                required
-                                email
-                                autoCapitalize="none"
-                                errorMessage='Please enter a valid Email Adress'
-                                onInputChange={()=>{}}
-                                initialValue='' />
 
-                        <Input id='password' 
-                                label = 'Password' 
-                                keyboardType= 'email-adress'
-                                secureTextEntry
-                                required
-                                minLength={5}
-                                autoCapitalize="none"
-                                errorMessage='Please enter a valid Password'
-                                onInputChange={()=>{}}
-                                initialValue='' /> 
-                        <View style= {styles.buttonContainer}><Button title='Login' onPress={()=>{}}/></View>
-                        <View style= {styles.buttonContainer}><Button title='Switch to Sign Up' onPress={()=>{}}/></View>    
-                    </ScrollView>
-                </Card>
-                </LinearGradient>  
-        </KeyboardAvoidingView>
-    )
+import {useDispatch} from 'react-redux'
+import * as authActions from '../store/actions/auth';
+
+const FORM_INPUT_UPDATE = 'FORM_INPUT_UPDATE';
+
+const formReducer = (state, action) => {
+  if (action.type === FORM_INPUT_UPDATE) {
+    const updatedValues = {
+      ...state.inputValues,
+      [action.input]: action.value
+    };
+    const updatedValidities = {
+      ...state.inputValidities,
+      [action.input]: action.isValid
+    };
+    let updatedFormIsValid = true;
+    for (const key in updatedValidities) {
+      updatedFormIsValid = updatedFormIsValid && updatedValidities[key];
+    }
+    return {
+      formIsValid: updatedFormIsValid,
+      inputValidities: updatedValidities,
+      inputValues: updatedValues
+    };
+  }
+  return state;
+};
+
+const AuthScreen = props => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState();
+  const [isSignup, setIsSignup] = useState(false);
+  const dispatch = useDispatch();
+
+  const [formState, dispatchFormState] = useReducer(formReducer, {
+    inputValues: {
+      email: '',
+      password: ''
+    },
+    inputValidities: {
+      email: false,
+      password: false
+    },
+    formIsValid: false
+  });
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert('An Error Occurred!', error, [{ text: 'Okay' }]);
+    }
+  }, [error]);
+
+  const authHandler = async () => {
+    let action;
+    if (isSignup) {
+      action = authActions.signup(
+        formState.inputValues.email,
+        formState.inputValues.password
+      );
+    } else {
+      action = authActions.login(
+        formState.inputValues.email,
+        formState.inputValues.password
+      );
+    }
+    setError(null);
+    setIsLoading(true);
+    try {
+      await dispatch(action);
+      props.navigation.navigate('Timer')
+    } catch (err) {
+      setError(err.message);
+      setIsLoading(false);
+    }
+    
+  };
+
+  const inputChangeHandler = useCallback(
+    (inputIdentifier, inputValue, inputValidity) => {
+      dispatchFormState({
+        type: FORM_INPUT_UPDATE,
+        value: inputValue,
+        isValid: inputValidity,
+        input: inputIdentifier
+      });
+    },
+    [dispatchFormState]
+  );
+
+  return (
+    <KeyboardAvoidingView
+      behavior="margin"
+      keyboardVerticalOffset={-20}
+      style={styles.screen}
+    >
+      <LinearGradient colors={['#ffedff', '#ffe3ff']} style={styles.gradient}>
+        <Card style={styles.authContainer}>
+          <ScrollView>
+            <Input
+              id="email"
+              label="E-Mail"
+              keyboardType="email-address"
+              required
+              email
+              autoCapitalize="none"
+              errorText="Please enter a valid email address."
+              onInputChange={inputChangeHandler}
+              initialValue=""
+            />
+            <Input
+              id="password"
+              label="Password"
+              keyboardType="default"
+              secureTextEntry
+              required
+              minLength={5}
+              autoCapitalize="none"
+              errorText="Please enter a valid password."
+              onInputChange={inputChangeHandler}
+              initialValue=""
+            />
+            <View style={styles.buttonContainer}>
+              {isLoading ? (
+                <ActivityIndicator size="small" color='gray' />
+              ) : (
+                <Button
+                  title={isSignup ? 'Sign Up' : 'Login'}
+                  color='gray'
+                  onPress={authHandler}
+                />
+              )}
+            </View>
+            <View style={styles.buttonContainer}>
+              <Button
+                title={`Switch to ${isSignup ? 'Login' : 'Sign Up'}`}
+                color='blue'
+                onPress={() => {
+                  setIsSignup(prevState => !prevState);
+                }}
+              />
+            </View>
+          </ScrollView>
+        </Card>
+      </LinearGradient>
+    </KeyboardAvoidingView>
+  );
 };
 
 AuthScreen.navigationOptions = {
-    headerTitle: 'Authenticate'
-}
+  headerTitle: 'Authenticate'
+};
 
 const styles = StyleSheet.create({
-    screen: {
-        flex: 1,
-    },
-
-    buttonContainer: {marginTop:10},
-
-
-    gradient: {
-        flex:1,
-        justifyContent:'center',
-        alignItems:'center'
-    },
-    authContainer: {
-        width:'80%',
-        maxWidth: 400,
-        maxHeight:400,
-        padding:20
-
-    }
-})
+  screen: {
+    flex: 1
+  },
+  gradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  authContainer: {
+    width: '80%',
+    maxWidth: 400,
+    maxHeight: 400,
+    padding: 20
+  },
+  buttonContainer: {
+    marginTop: 10
+  }
+});
 
 export default AuthScreen;

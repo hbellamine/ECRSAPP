@@ -1,6 +1,7 @@
 import React,{useState} from 'react';
-import {Text,StyleSheet, View, Button, Modal} from 'react-native'
+import {Text,StyleSheet, View, Button, Modal,Image} from 'react-native'
 import Dialog from "react-native-dialog";
+import img from '../assets/picturetimer.jpg'
 
 const ModalSession = props => {
 
@@ -124,14 +125,20 @@ const ChoiceScreen = props => {
 
 
     return(
-        <View style={{marginTop:100}}>
+        
+        <View style={{marginTop:10}}>
+        
+                 <Image
+                    style={styles.stretch}
+                    source={require('../assets/picturetimer.jpg')}
+                />
             <View style={{margin:20,justifyContent:'space-evenly'}}>
-                <Text style={{fontSize:40, justifyContent:'center'}}>Welcome to ECRS App</Text>
-                <Text>The ECRS App is based on ECRS methodoly (Eliminate / Combine / Reduce / Simplify)</Text>
+               
+                <Text style={{fontSize:20, textAlign:'center'}} >The ECRS App is based on ECRS methodoly (Eliminate / Combine / Reduce / Simplify)</Text>
             </View>
             <View style={{margin:20, display:'flex', flexDirection:'row',justifyContent:'space-around' }}>
-                <Button title='Start a New Session' onPress={callnewmodal}>Start a new Session</Button>
-                <Button title='Join a Session' onPress={calljoinmodal}>Join a new session</Button>
+                <Button color='blue' title='Start a New Session' onPress={callnewmodal}>Start a new Session</Button>
+                <Button color='gray' title='Join a Session' onPress={calljoinmodal}>Join a new session</Button>
 
                 {JoinVisible && <ModalSession navigation={props.navigation} Visible= {JoinVisible} setVisible={setJoinVisible}/>}
                 {NewVisible && <ModalNewSession navigation = {props.navigation} Visible={NewVisible} setVisible= {setNewVisible} />}
@@ -147,5 +154,19 @@ ChoiceScreen.navigationOptions = {
     },
     headerTintColor:'white',
 }
+
+
+const styles = StyleSheet.create({
+    container: {
+      //paddingTop: 10,
+    },
+    stretch: {
+      width: 'auto',
+      height: '50%',
+      borderRadius:5,
+      margin:10,
+      resizeMode: 'stretch',
+    },
+  });
 
 export default ChoiceScreen;
